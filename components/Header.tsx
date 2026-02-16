@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
             >
                 <CogIcon className="w-5 h-5" />
             </button>
-            <div className="text-gray-500 text-xs font-mono uppercase tracking-widest hidden sm:block">Built by Second Oak</div>
+            <div className="text-gray-500 text-xs font-mono uppercase tracking-widest hidden sm:block">Built by <a href="https://secondoak.se" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Second Oak</a></div>
         </div>
       </div>
     </header>
