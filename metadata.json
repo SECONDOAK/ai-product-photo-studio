@@ -1,0 +1,5 @@
+{
+  "name": "AI Product Photo Studio",
+  "description": "An application that transforms your product images into professional-grade photos using AI. Choose from preset styles, upload a reference image, or describe your desired output to generate stunning results with Gemini.",
+  "requestFramePermissions": []
+}
