@@ -63,31 +63,34 @@
     inset: -50%;
     background: conic-gradient(
       from 0deg,
-      transparent 0%,
-      transparent 30%,
-      rgba(255,255,255,0.9) 40%,
-      rgba(200,220,255,1) 50%,
-      rgba(255,255,255,0.9) 60%,
-      transparent 70%,
-      transparent 100%
+      #6366f1 0%,
+      #8b5cf6 15%,
+      #a855f7 25%,
+      #ec4899 35%,
+      #f9a8d4 45%,
+      #c084fc 55%,
+      #818cf8 65%,
+      #6366f1 75%,
+      #8b5cf6 85%,
+      #6366f1 100%
     );
-    animation: spin-border 2.5s linear infinite;
+    animation: spin-border 3s linear infinite;
     z-index: 0;
   }
   .glow-btn-wrapper.disabled::before {
+    background: #27272a;
     animation: none;
-    background: transparent;
   }
   .glow-btn-wrapper.loading::before {
     background: conic-gradient(
       from 0deg,
-      transparent 0%,
-      transparent 30%,
-      rgba(239,68,68,0.9) 40%,
-      rgba(255,100,100,1) 50%,
-      rgba(239,68,68,0.9) 60%,
-      transparent 70%,
-      transparent 100%
+      #dc2626 0%,
+      #ef4444 15%,
+      #f87171 30%,
+      #fca5a5 45%,
+      #f87171 60%,
+      #ef4444 75%,
+      #dc2626 100%
     );
   }
   .glow-btn-inner {

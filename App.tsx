@@ -600,10 +600,10 @@ const App: React.FC = () => {
                 isLoading ? 'loading' : ''
               }${!isLoading && productImages.length === 0 && !outputDescription.trim() ? ' disabled' : ''}`}
               style={{ boxShadow: isLoading
-                ? '0 0 20px rgba(220,38,38,0.5)'
+                ? '0 0 25px rgba(220,38,38,0.5)'
                 : (!isLoading && productImages.length === 0 && !outputDescription.trim())
                   ? 'none'
-                  : '0 0 20px rgba(255,255,255,0.3)'
+                  : '0 0 25px rgba(139,92,246,0.4), 0 0 50px rgba(168,85,247,0.15)'
               }}
             >
              <button
