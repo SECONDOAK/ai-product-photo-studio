@@ -101,6 +101,13 @@ const App: React.FC = () => {
     setIsApiKeyModalOpen(false);
   };
 
+  const handleLogout = () => {
+    setApiKey('');
+    setIsUnlocked(false);
+    localStorage.removeItem('gemini-api-key');
+    localStorage.removeItem('gemini-app-unlocked');
+  };
+
   const decrementTrial = () => {
     if (isTrialMode) {
       const newCount = Math.max(0, trialRemaining - 1);
@@ -398,7 +405,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-gray-100 font-sans selection:bg-white selection:text-black">
-      <Header onOpenSettings={() => setIsApiKeyModalOpen(true)} />
+      <Header onOpenSettings={() => setIsApiKeyModalOpen(true)} onLogout={handleLogout} isLoggedIn={hasFullAccess} />
       <main className="container mx-auto p-4 md:p-8 pb-36">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: Inputs */}

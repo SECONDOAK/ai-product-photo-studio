@@ -4,9 +4,11 @@ import { CameraIcon, CogIcon } from './IconComponents';
 
 interface HeaderProps {
     onOpenSettings: () => void;
+    onLogout?: () => void;
+    isLoggedIn?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLoggedIn }) => {
   return (
     <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -19,6 +21,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             </h1>
         </div>
         <div className="flex items-center gap-4">
+            {isLoggedIn && onLogout && (
+                <button
+                    onClick={onLogout}
+                    className="text-gray-500 hover:text-white text-xs font-medium uppercase tracking-wide transition-colors"
+                >
+                    Log out
+                </button>
+            )}
             <button
                 onClick={onOpenSettings}
                 className="text-gray-400 hover:text-white transition-colors"
