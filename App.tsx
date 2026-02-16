@@ -437,7 +437,7 @@ const App: React.FC = () => {
               <p className="text-gray-400 text-sm mb-4">Composition instructions (e.g., 'A single shoe, side view'). Required if no image is uploaded.</p>
               <textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} placeholder="Describe the composition..." className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
               <AspectRatioSelector selectedAspectRatio={aspectRatio} onSelect={setAspectRatio} />
-              <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} />
+              <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} locked4K={isTrialMode} />
             </div>
 
             <div className="border-t border-gray-700 pt-8">
