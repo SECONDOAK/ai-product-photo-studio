@@ -9,6 +9,7 @@ import { generateProductPhoto, retouchImage } from './services/geminiService';
 import { StylePreset } from './types';
 import { STYLE_PRESETS } from './constants';
 import { ImageModal } from './components/ImageModal';
+import { ApiKeyModal } from './components/ApiKeyModal';
 import { ReferenceAspectSelector } from './components/ReferenceAspectSelector';
 import { BeforeAfterSlider } from './components/BeforeAfterSlider';
 import { HistoryCarousel } from './components/HistoryCarousel';
@@ -16,6 +17,8 @@ import { AspectRatioSelector } from './components/AspectRatioSelector';
 import { ResolutionSelector } from './components/ResolutionSelector';
 import { DrawingCanvas, DrawingCanvasHandle } from './components/DrawingCanvas';
 import heic2any from 'heic2any';
+
+const FREE_GENERATIONS = 5;
 
 // Cost constants matching ResolutionSelector
 const EXCHANGE_RATE = 11;
@@ -49,6 +52,19 @@ const App: React.FC = () => {
   const retouchFileInputRef = useRef<HTMLInputElement>(null);
   const [isRetouchRefProcessing, setIsRetouchRefProcessing] = useState(false);
 
+  // API Key & Auth State
+  const [apiKey, setApiKey] = useState<string>(localStorage.getItem('gemini-api-key') || '');
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+      return localStorage.getItem('gemini-app-unlocked') === 'true';
+  });
+
+  // Trial State
+  const [trialRemaining, setTrialRemaining] = useState<number>(() => {
+    const saved = localStorage.getItem('gemini-trial-remaining');
+    return saved !== null ? parseInt(saved) : FREE_GENERATIONS;
+  });
+
   // Masking State
   const [isMaskingMode, setIsMaskingMode] = useState(false);
   const [brushSize, setBrushSize] = useState(10);
@@ -56,6 +72,12 @@ const App: React.FC = () => {
 
   // Abort Controller
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // User has full access if they have an API key or are unlocked via password
+  const hasFullAccess = !!(apiKey || isUnlocked);
+  // User is in free trial mode (no key, not unlocked)
+  const isTrialMode = !hasFullAccess;
+  const trialExhausted = isTrialMode && trialRemaining <= 0;
 
   const handleAddProductImage = useCallback((newImage: string | null) => {
     if (newImage && !productImages.includes(newImage)) {
@@ -66,6 +88,26 @@ const App: React.FC = () => {
   const handleRemoveProductImage = useCallback((indexToRemove: number) => {
     setProductImages(prev => prev.filter((_, index) => index !== indexToRemove));
   }, []);
+
+  const handleSaveKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('gemini-api-key', key);
+    setIsApiKeyModalOpen(false);
+  };
+
+  const handlePasswordSuccess = () => {
+    setIsUnlocked(true);
+    localStorage.setItem('gemini-app-unlocked', 'true');
+    setIsApiKeyModalOpen(false);
+  };
+
+  const decrementTrial = () => {
+    if (isTrialMode) {
+      const newCount = Math.max(0, trialRemaining - 1);
+      setTrialRemaining(newCount);
+      localStorage.setItem('gemini-trial-remaining', newCount.toString());
+    }
+  };
 
   const calculateAndAddCost = (res: string) => {
       const usdCost = PRICES_USD[res] || 0;
@@ -91,13 +133,24 @@ const App: React.FC = () => {
       return;
     }
 
+    // If trial exhausted, show modal
+    if (trialExhausted) {
+      setIsApiKeyModalOpen(true);
+      return;
+    }
+
+    // Block 4K in trial mode
+    if (isTrialMode && resolution === '4K') {
+      setError('4K resolution requires your own API key or login. Please use 1K or 2K, or add your API key in settings.');
+      return;
+    }
+
     setRetouchBeforeImage(null);
     setIsMaskingMode(false);
     setRetouchRefImage(null);
     setIsLoading(true);
     setError(null);
 
-    // Initialize AbortController
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
@@ -123,7 +176,6 @@ const App: React.FC = () => {
             combinedPrompt += ' Your task is to create a professional product photo of the object from the provided image(s).';
           }
       } else {
-          // No images provided - purely generative
           combinedPrompt = "You are an expert AI product photographer. Create a high-quality, professional product photo based on the following description.";
           if (referenceImage) {
              combinedPrompt += " Use the provided image as a style reference (lighting, mood, composition).";
@@ -147,19 +199,26 @@ const App: React.FC = () => {
         combinedPrompt += ` Additional style guidance: ${stylePrompt.trim()}.`;
       }
 
+      // If user has own API key, pass it directly. Otherwise proxy handles it.
       const result = await generateProductPhoto(
           productImages,
           referenceImage,
           combinedPrompt,
           aspectRatio,
           resolution,
-          abortController.signal
+          abortController.signal,
+          apiKey || undefined
       );
 
       if (!abortController.signal.aborted) {
         setGeneratedImage(result);
         setGenerationHistory(prev => [result, ...prev]);
-        calculateAndAddCost(resolution);
+
+        if (isTrialMode) {
+          decrementTrial();
+        } else {
+          calculateAndAddCost(resolution);
+        }
       }
 
     } catch (e: any) {
@@ -167,17 +226,15 @@ const App: React.FC = () => {
           console.log('Generation aborted.');
           return;
       }
-
       console.error(e);
-      const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-      setError(errorMessage);
+      setError(e instanceof Error ? e.message : 'An unknown error occurred.');
     } finally {
       if (abortControllerRef.current === abortController) {
           setIsLoading(false);
           abortControllerRef.current = null;
       }
     }
-  }, [productImages, referenceImage, textPrompt, selectedStyle, outputDescription, referenceAspects, aspectRatio, resolution]);
+  }, [productImages, referenceImage, textPrompt, selectedStyle, outputDescription, referenceAspects, aspectRatio, resolution, apiKey, isTrialMode, trialExhausted, trialRemaining]);
 
   const handleRetouch = useCallback(async () => {
     if (!generatedImage || !retouchPrompt.trim()) {
@@ -185,11 +242,20 @@ const App: React.FC = () => {
         return;
     }
 
+    if (trialExhausted) {
+      setIsApiKeyModalOpen(true);
+      return;
+    }
+
+    if (isTrialMode && resolution === '4K') {
+      setError('4K resolution requires your own API key or login.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setRetouchBeforeImage(generatedImage);
 
-    // Initialize AbortController
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
@@ -208,19 +274,22 @@ const App: React.FC = () => {
             resolution,
             maskBase64,
             retouchRefImage || undefined,
-            abortController.signal
+            abortController.signal,
+            apiKey || undefined
         );
 
         if (!abortController.signal.aborted) {
             setGeneratedImage(result);
             setGenerationHistory(prev => [result, ...prev]);
             setRetouchPrompt('');
-
-            // Reset state
             setIsMaskingMode(false);
             if (canvasRef.current) canvasRef.current.clear();
 
-            calculateAndAddCost(resolution);
+            if (isTrialMode) {
+              decrementTrial();
+            } else {
+              calculateAndAddCost(resolution);
+            }
         }
 
     } catch (e: any) {
@@ -228,17 +297,15 @@ const App: React.FC = () => {
             console.log('Retouch aborted.');
             return;
         }
-
         console.error(e);
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during retouch.';
-        setError(errorMessage);
+        setError(e instanceof Error ? e.message : 'An unknown error occurred during retouch.');
     } finally {
       if (abortControllerRef.current === abortController) {
         setIsLoading(false);
         abortControllerRef.current = null;
       }
     }
-  }, [generatedImage, retouchPrompt, aspectRatio, resolution, isMaskingMode, retouchRefImage]);
+  }, [generatedImage, retouchPrompt, aspectRatio, resolution, isMaskingMode, retouchRefImage, apiKey, isTrialMode, trialExhausted, trialRemaining]);
 
   const handleUndoRetouch = useCallback(() => {
     if (retouchBeforeImage) {
@@ -260,7 +327,6 @@ const App: React.FC = () => {
         setIsModalOpen(true);
         return;
     }
-
     setGeneratedImage(image);
     setRetouchBeforeImage(null);
     setRetouchPrompt('');
@@ -278,13 +344,7 @@ const App: React.FC = () => {
   };
 
   const undoMask = () => {
-    if (canvasRef.current) {
-        canvasRef.current.undo();
-    }
-  };
-
-  const handleGenerateClick = () => {
-    handleGenerate();
+    if (canvasRef.current) canvasRef.current.undo();
   };
 
   // Helper: Process potential HEIC file
@@ -292,19 +352,12 @@ const App: React.FC = () => {
     try {
         let fileToProcess: Blob = file;
         if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
-             const convertedBlob = await heic2any({
-                blob: file,
-                toType: 'image/jpeg',
-                quality: 0.9
-            });
+             const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
             fileToProcess = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
         }
-
         return new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                resolve(reader.result as string);
-            };
+            reader.onloadend = () => resolve(reader.result as string);
             reader.readAsDataURL(fileToProcess);
         });
     } catch (e) {
@@ -313,7 +366,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Helper for Retouch Paste
   const handleRetouchPaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
@@ -346,7 +398,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-gray-100 font-sans selection:bg-white selection:text-black">
-      <Header />
+      <Header onOpenSettings={() => setIsApiKeyModalOpen(true)} />
       <main className="container mx-auto p-4 md:p-8 pb-36">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: Inputs */}
@@ -361,11 +413,7 @@ const App: React.FC = () => {
                     <div key={index} className="relative group aspect-square">
                       <img src={img} alt={`Product image ${index + 1}`} className="w-full h-full object-cover rounded-xl shadow-lg border border-gray-700" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all rounded-xl flex items-center justify-center">
-                        <button
-                          onClick={() => handleRemoveProductImage(index)}
-                          className="bg-white text-black rounded-full p-1.5 hover:bg-gray-200 transition-colors"
-                          aria-label="Remove image"
-                        >
+                        <button onClick={() => handleRemoveProductImage(index)} className="bg-white text-black rounded-full p-1.5 hover:bg-gray-200 transition-colors" aria-label="Remove image">
                           <XCircleIcon className="w-5 h-5" />
                         </button>
                       </div>
@@ -374,68 +422,29 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <ImageUploader
-                label={productImages.length > 0 ? "Add another" : "Product Image(s)"}
-                onImageUpload={handleAddProductImage}
-                previewId="product-preview"
-                showPreview={false}
-              />
+              <ImageUploader label={productImages.length > 0 ? "Add another" : "Product Image(s)"} onImageUpload={handleAddProductImage} previewId="product-preview" showPreview={false} />
             </div>
 
             <div className="border-t border-gray-700 pt-8">
               <h2 className="text-xl font-semibold text-white mb-4 tracking-tight">2. Describe Output</h2>
               <p className="text-gray-400 text-sm mb-4">Composition instructions (e.g., 'A single shoe, side view'). Required if no image is uploaded.</p>
-              <textarea
-                value={outputDescription}
-                onChange={(e) => setOutputDescription(e.target.value)}
-                placeholder="Describe the composition..."
-                className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none"
-                rows={3}
-              />
-               <AspectRatioSelector
-                selectedAspectRatio={aspectRatio}
-                onSelect={setAspectRatio}
-              />
-               <ResolutionSelector
-                selectedResolution={resolution}
-                onSelect={setResolution}
-              />
+              <textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} placeholder="Describe the composition..." className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
+              <AspectRatioSelector selectedAspectRatio={aspectRatio} onSelect={setAspectRatio} />
+              <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} />
             </div>
 
             <div className="border-t border-gray-700 pt-8">
               <h2 className="text-xl font-semibold text-white mb-4 tracking-tight">3. Define Style</h2>
-               <p className="text-gray-400 text-sm mb-6">Choose a preset or upload a reference.</p>
-
+              <p className="text-gray-400 text-sm mb-6">Choose a preset or upload a reference.</p>
               <div className="space-y-6">
-                <StyleSelector
-                  presets={STYLE_PRESETS}
-                  selectedStyle={selectedStyle}
-                  onSelect={handleStyleSelect}
-                />
-
+                <StyleSelector presets={STYLE_PRESETS} selectedStyle={selectedStyle} onSelect={handleStyleSelect} />
                 <div>
-                   <ImageUploader
-                    label="Style Reference Image (Optional)"
-                    onImageUpload={setReferenceImage}
-                    previewId="reference-preview"
-                  />
-                  {referenceImage && (
-                    <ReferenceAspectSelector
-                      selectedAspects={referenceAspects}
-                      onSelectionChange={setReferenceAspects}
-                    />
-                  )}
+                  <ImageUploader label="Style Reference Image (Optional)" onImageUpload={setReferenceImage} previewId="reference-preview" />
+                  {referenceImage && <ReferenceAspectSelector selectedAspects={referenceAspects} onSelectionChange={setReferenceAspects} />}
                 </div>
-
                 <div>
                   <h3 className="text-sm font-semibold text-gray-300 mb-2">Or Describe It</h3>
-                  <textarea
-                    value={textPrompt}
-                    onChange={(e) => setTextPrompt(e.target.value)}
-                    placeholder="e.g., 'on a marble surface...'"
-                    className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none"
-                    rows={3}
-                  />
+                  <textarea value={textPrompt} onChange={(e) => setTextPrompt(e.target.value)} placeholder="e.g., 'on a marble surface...'" className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
                 </div>
               </div>
             </div>
@@ -444,36 +453,47 @@ const App: React.FC = () => {
           {/* Right Column: Output */}
           <div className="bg-gray-800 border border-gray-700 rounded-3xl shadow-2xl p-6 flex flex-col h-[calc(100vh-8rem)] lg:h-[calc(100vh-12rem)] sticky top-24">
 
-              {/* Cost Counter */}
+              {/* Status: Trial or Cost Counter */}
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
                     <h3 className="text-lg font-bold text-gray-200 uppercase tracking-wider">
-                        API Usage
+                        {isTrialMode ? "Free Trial" : "API Usage"}
                     </h3>
                     <div className="group relative">
                         <InfoIcon className="w-5 h-5 text-gray-500 cursor-help hover:text-white transition-colors" />
                         <div className="absolute left-0 top-full mt-2 w-80 p-5 bg-white text-sm text-gray-900 rounded-xl shadow-2xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            <p className="mb-3 font-bold text-gray-900">The cost is based on tokens to use the Gemini API.</p>
-                            <ul className="space-y-2 text-gray-700 mb-3 font-medium">
-                                <li>• 1K / 2K images ≈ 1.47 SEK</li>
-                                <li>• 4K images ≈ 2.64 SEK</li>
-                            </ul>
-                            <p className="text-gray-500 text-xs uppercase tracking-wide">per image generation</p>
+                            {isTrialMode ? (
+                                <p className="mb-3 font-bold text-gray-900">You have {trialRemaining} free generations remaining. 4K is not available in free mode.</p>
+                            ) : (
+                                <>
+                                    <p className="mb-3 font-bold text-gray-900">The cost is based on tokens to use the Gemini API.</p>
+                                    <ul className="space-y-2 text-gray-700 mb-3 font-medium">
+                                        <li>• 1K / 2K images ≈ 1.47 SEK</li>
+                                        <li>• 4K images ≈ 2.64 SEK</li>
+                                    </ul>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">per image generation</p>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-2 bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800">
-                    <CoinIcon className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm font-mono font-medium text-white">{sessionCost.toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr</span>
-                </div>
+                {isTrialMode ? (
+                    <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg border ${trialRemaining === 0 ? 'bg-red-900/40 border-red-700' : 'bg-green-900/30 border-green-800'}`}>
+                        <SparklesIcon className={`w-4 h-4 ${trialRemaining === 0 ? 'text-red-400' : 'text-green-400'}`} />
+                        <span className={`text-sm font-mono font-medium ${trialRemaining === 0 ? 'text-red-200' : 'text-green-100'}`}>
+                            {trialRemaining} left
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex items-center space-x-2 bg-black/40 px-3 py-1.5 rounded-lg border border-gray-800">
+                        <CoinIcon className="w-4 h-4 text-yellow-400" />
+                        <span className="text-sm font-mono font-medium text-white">{sessionCost.toLocaleString('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr</span>
+                    </div>
+                )}
               </div>
 
-              <HistoryCarousel
-                images={generationHistory}
-                selectedImage={generatedImage}
-                onSelectImage={handleSelectFromHistory}
-              />
+              <HistoryCarousel images={generationHistory} selectedImage={generatedImage} onSelectImage={handleSelectFromHistory} />
 
               <div className="flex-grow flex flex-col items-center justify-center bg-black/40 border-2 border-dashed border-gray-600 rounded-2xl p-4 relative min-h-[300px] overflow-hidden">
                 {isLoading ? (
@@ -484,18 +504,11 @@ const App: React.FC = () => {
                 ) : (
                   isMaskingMode && generatedImage ? (
                      <div className="w-full h-full relative">
-                        <DrawingCanvas
-                            ref={canvasRef}
-                            imageUrl={generatedImage}
-                            brushSize={brushSize}
-                        />
+                        <DrawingCanvas ref={canvasRef} imageUrl={generatedImage} brushSize={brushSize} />
                      </div>
                   ) : retouchBeforeImage && generatedImage ? (
                     <div className="w-full h-full relative">
-                        <BeforeAfterSlider
-                            beforeImage={retouchBeforeImage}
-                            afterImage={generatedImage}
-                        />
+                        <BeforeAfterSlider beforeImage={retouchBeforeImage} afterImage={generatedImage} />
                     </div>
                   ) : generatedImage ? (
                     <div className="w-full h-full flex items-center justify-center">
@@ -513,117 +526,57 @@ const App: React.FC = () => {
 
                {generatedImage && !isLoading && (
                 <div className="mt-4 space-y-3">
-                    {/* View/Download Button */}
                     <div className="flex justify-center">
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-black bg-white rounded-full shadow-lg hover:bg-gray-200 transition-all transform active:scale-95"
-                        >
+                        <button onClick={() => setIsModalOpen(true)} className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-black bg-white rounded-full shadow-lg hover:bg-gray-200 transition-all transform active:scale-95">
                             <DownloadIcon className="w-4 h-4" />
                             <span>View & Download{retouchBeforeImage ? ' After Image' : ''}</span>
                         </button>
                     </div>
 
-                    {/* Retouch Bar */}
                     <div className="flex flex-col gap-2 p-2 bg-black/20 rounded-xl border border-gray-700 backdrop-blur-sm">
                         <div className="flex w-full gap-2 items-center">
-                             <button
-                                onClick={toggleMaskingMode}
-                                className={`flex items-center justify-center p-2.5 rounded-lg border transition-all ${
-                                    isMaskingMode
-                                    ? 'bg-white border-white text-black'
-                                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-600'
-                                }`}
-                                title="Draw mask"
-                            >
+                             <button onClick={toggleMaskingMode} className={`flex items-center justify-center p-2.5 rounded-lg border transition-all ${isMaskingMode ? 'bg-white border-white text-black' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-600'}`} title="Draw mask">
                                 <PencilIcon className="w-4 h-4" />
                             </button>
 
-                            {/* Retouch Reference Image Upload */}
                              <div className="relative group">
                                 {isRetouchRefProcessing ? (
                                     <div className="w-9 h-9 flex items-center justify-center bg-gray-800 rounded-md border border-gray-600">
-                                         <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
+                                         <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     </div>
                                 ) : retouchRefImage ? (
                                     <div className="relative w-9 h-9">
                                         <img src={retouchRefImage} alt="Ref" className="w-full h-full object-cover rounded-md border border-gray-500" />
-                                        <button
-                                            onClick={() => setRetouchRefImage(null)}
-                                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
-                                        >
-                                            <XCircleIcon className="w-3 h-3" />
-                                        </button>
+                                        <button onClick={() => setRetouchRefImage(null)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"><XCircleIcon className="w-3 h-3" /></button>
                                     </div>
                                 ) : (
-                                    <button
-                                        onClick={() => retouchFileInputRef.current?.click()}
-                                        className="flex items-center justify-center p-2.5 rounded-lg border border-gray-700 bg-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-all"
-                                        title="Attach reference image"
-                                    >
+                                    <button onClick={() => retouchFileInputRef.current?.click()} className="flex items-center justify-center p-2.5 rounded-lg border border-gray-700 bg-gray-800 text-gray-400 hover:text-white hover:border-gray-600 transition-all" title="Attach reference image">
                                         <PaperClipIcon className="w-4 h-4" />
                                     </button>
                                 )}
-                                <input
-                                    type="file"
-                                    ref={retouchFileInputRef}
-                                    onChange={handleRetouchRefFileSelect}
-                                    className="hidden"
-                                    accept="image/*,.heic,.HEIC"
-                                />
+                                <input type="file" ref={retouchFileInputRef} onChange={handleRetouchRefFileSelect} className="hidden" accept="image/*,.heic,.HEIC" />
                              </div>
 
-                            <input
-                                type="text"
-                                value={retouchPrompt}
-                                onChange={(e) => setRetouchPrompt(e.target.value)}
-                                onPaste={handleRetouchPaste}
-                                placeholder={isMaskingMode ? "Edit selection..." : "Retouch (Ctrl+V to paste image)..."}
-                                className="flex-grow p-2.5 bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-white focus:border-white transition text-sm text-white placeholder-gray-500 outline-none"
-                                onKeyDown={(e) => e.key === 'Enter' && !!retouchPrompt.trim() && handleRetouch()}
-                            />
+                            <input type="text" value={retouchPrompt} onChange={(e) => setRetouchPrompt(e.target.value)} onPaste={handleRetouchPaste} placeholder={isMaskingMode ? "Edit selection..." : "Retouch (Ctrl+V to paste image)..."} className="flex-grow p-2.5 bg-gray-900 border border-gray-700 rounded-lg focus:ring-1 focus:ring-white focus:border-white transition text-sm text-white placeholder-gray-500 outline-none" onKeyDown={(e) => e.key === 'Enter' && !!retouchPrompt.trim() && handleRetouch()} />
 
-                            <button
-                                onClick={handleRetouch}
-                                disabled={!retouchPrompt.trim() && !isLoading}
-                                className="flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-sm text-black bg-white rounded-lg shadow-md hover:bg-gray-200 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed transition-all active:scale-95"
-                            >
+                            <button onClick={handleRetouch} disabled={!retouchPrompt.trim() && !isLoading} className="flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-sm text-black bg-white rounded-lg shadow-md hover:bg-gray-200 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed transition-all active:scale-95">
                                 <SparklesIcon className="w-4 h-4" />
                                 <span className="hidden sm:inline">Retouch</span>
                             </button>
 
                             {retouchBeforeImage && !isMaskingMode && (
-                                <button
-                                    onClick={handleUndoRetouch}
-                                    className="p-2.5 text-gray-400 bg-gray-900 border border-gray-700 rounded-lg hover:text-white hover:border-gray-600 transition-all active:scale-95"
-                                    aria-label="Undo"
-                                >
+                                <button onClick={handleUndoRetouch} className="p-2.5 text-gray-400 bg-gray-900 border border-gray-700 rounded-lg hover:text-white hover:border-gray-600 transition-all active:scale-95" aria-label="Undo">
                                     <UndoIcon className="w-4 h-4" />
                                 </button>
                             )}
                         </div>
 
-                        {/* Masking Toolbar */}
                         {isMaskingMode && (
                              <div className="flex items-center gap-4 px-2 py-1 animate-in fade-in slide-in-from-top-1">
                                 <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Brush Size</span>
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="50"
-                                    value={brushSize}
-                                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                                    className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-white"
-                                />
-                                <button
-                                    onClick={undoMask}
-                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-white whitespace-nowrap transition-colors"
-                                >
-                                    <UndoIcon className="w-3 h-3"/>
-                                    Undo
+                                <input type="range" min="1" max="50" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value))} className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-white" />
+                                <button onClick={undoMask} className="flex items-center gap-1 text-xs text-gray-400 hover:text-white whitespace-nowrap transition-colors">
+                                    <UndoIcon className="w-3 h-3"/> Undo
                                 </button>
                              </div>
                         )}
@@ -636,7 +589,7 @@ const App: React.FC = () => {
         {/* Sticky CTA Button */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
              <button
-                onClick={isLoading ? handleAbort : handleGenerateClick}
+                onClick={isLoading ? handleAbort : () => handleGenerate()}
                 disabled={!isLoading && productImages.length === 0 && !outputDescription.trim()}
                 className={`flex items-center justify-center gap-3 px-10 py-4 text-lg font-bold rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-105 active:scale-100 transition-all duration-300 ${
                     isLoading
@@ -645,29 +598,25 @@ const App: React.FC = () => {
                 }`}
             >
                 {isLoading ? (
-                    <>
-                        <XCircleIcon className="w-6 h-6"/>
-                        <span>Abort Generation</span>
-                    </>
+                    <><XCircleIcon className="w-6 h-6"/><span>Abort Generation</span></>
                 ) : (
-                    <>
-                        <SparklesIcon className="w-6 h-6"/>
-                        <span>Generate</span>
-                    </>
+                    <><SparklesIcon className="w-6 h-6"/><span>Generate</span></>
                 )}
             </button>
         </div>
       </main>
 
       {isModalOpen && generatedImage && (
-        <ImageModal
-            isOpen={isModalOpen}
-            imageUrl={generatedImage}
-            onClose={() => setIsModalOpen(false)}
-            filenamePrefix={filenamePrefix}
-            onFilenameChange={setFilenamePrefix}
-        />
+        <ImageModal isOpen={isModalOpen} imageUrl={generatedImage} onClose={() => setIsModalOpen(false)} filenamePrefix={filenamePrefix} onFilenameChange={setFilenamePrefix} />
       )}
+
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        onSave={handleSaveKey}
+        onPasswordSuccess={handlePasswordSuccess}
+        trialOver={trialExhausted}
+      />
     </div>
   );
 };

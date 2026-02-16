@@ -1,5 +1,6 @@
 
 const PROXY_URL = process.env.GEMINI_PROXY_URL || 'https://gemini-proxy.ekdahl-simon.workers.dev';
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -16,11 +17,17 @@ interface GeminiResponse {
   error?: { message: string; code: number };
 }
 
+/**
+ * Calls Gemini API with retry logic.
+ * If apiKey is provided, calls Google directly with the user's key.
+ * Otherwise, calls through the Cloudflare proxy (which has its own key).
+ */
 const generateWithRetry = async (
   model: string,
   contents: unknown,
   config?: unknown,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  apiKey?: string
 ): Promise<GeminiResponse> => {
   let retries = 0;
   const maxRetries = 5;
@@ -31,12 +38,32 @@ const generateWithRetry = async (
       throw new DOMException('Aborted', 'AbortError');
     }
 
-    const response = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, contents, config }),
-      signal,
-    });
+    let response: Response;
+
+    if (apiKey) {
+      // Direct call to Google with user's own API key
+      const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`;
+      const payload: Record<string, unknown> = {
+        contents: Array.isArray(contents) ? contents : [contents],
+      };
+      if (config) {
+        payload.generationConfig = config;
+      }
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal,
+      });
+    } else {
+      // Call through Cloudflare proxy (no key needed)
+      response = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, contents, config }),
+        signal,
+      });
+    }
 
     const data: GeminiResponse = await response.json();
 
@@ -78,22 +105,20 @@ export const generateProductPhoto = async (
   textPrompt: string,
   aspectRatio: string,
   resolution: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  apiKey?: string
 ): Promise<string> => {
 
     const parts: GeminiPart[] = [];
 
-    // Add product images
     productImagesBase64.forEach(imgBase64 => {
       parts.push(fileToGenerativePart(imgBase64));
     });
 
-    // Add reference image if it exists
     if (referenceImageBase64) {
         parts.push(fileToGenerativePart(referenceImageBase64));
     }
 
-    // Add the text prompt
     parts.push({ text: textPrompt });
 
     const isHighRes = resolution === '2K' || resolution === '4K';
@@ -114,7 +139,8 @@ export const generateProductPhoto = async (
           model,
           { parts },
           config,
-          signal
+          signal,
+          apiKey
         );
 
         const candidate = response.candidates?.[0];
@@ -147,6 +173,10 @@ export const generateProductPhoto = async (
 
         const errorString = error?.message || String(error);
 
+        if (errorString.includes('API key')) {
+          throw new Error('There was an issue with your API Key. Please ensure it is valid and has billing enabled.');
+        }
+
         if (errorString.includes('503') || errorString.includes('overloaded') || errorString.includes('UNAVAILABLE')) {
           throw new Error('The AI model is currently overloaded due to high demand. Please try again in a few minutes.');
         }
@@ -166,7 +196,8 @@ export const retouchImage = async (
     resolution: string,
     maskImageBase64?: string,
     referenceImageBase64?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    apiKey?: string
   ): Promise<string> => {
 
     let finalPrompt = `Apply this edit to the FIRST image provided: ${retouchPrompt}. Do not change the product itself, only apply the requested stylistic adjustment. Maintain the original aspect ratio.`;
@@ -205,7 +236,8 @@ export const retouchImage = async (
         model,
         { parts },
         config,
-        signal
+        signal,
+        apiKey
       );
 
       const candidate = response.candidates?.[0];
@@ -237,6 +269,10 @@ export const retouchImage = async (
       console.error("Error retouching image with Gemini:", error);
 
       const errorString = error?.message || String(error);
+
+      if (errorString.includes('API key')) {
+        throw new Error('There was an issue with your API Key.');
+      }
 
       if (errorString.includes('503') || errorString.includes('overloaded') || errorString.includes('UNAVAILABLE')) {
         throw new Error('The AI model is busy. Please try your retouch again in a moment.');
