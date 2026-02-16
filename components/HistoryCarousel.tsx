@@ -16,7 +16,7 @@ export const HistoryCarousel: React.FC<HistoryCarouselProps> = ({ images, select
   return (
     <div className="mb-4">
       <h3 className="text-lg font-semibold text-gray-300 mb-3">History</h3>
-      <div className="flex overflow-x-auto space-x-3 p-2 -mx-6 px-6">
+      <div className="flex overflow-x-auto space-x-3 p-2">
         {images.map((image, index) => (
           <button
             key={index}
