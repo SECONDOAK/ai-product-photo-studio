@@ -595,12 +595,23 @@ const App: React.FC = () => {
 
         {/* Sticky CTA Button */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+            <div
+              className={`glow-btn-wrapper ${
+                isLoading ? 'loading' : ''
+              }${!isLoading && productImages.length === 0 && !outputDescription.trim() ? ' disabled' : ''}`}
+              style={{ boxShadow: isLoading
+                ? '0 0 20px rgba(220,38,38,0.5)'
+                : (!isLoading && productImages.length === 0 && !outputDescription.trim())
+                  ? 'none'
+                  : '0 0 20px rgba(255,255,255,0.3)'
+              }}
+            >
              <button
                 onClick={isLoading ? handleAbort : () => handleGenerate()}
                 disabled={!isLoading && productImages.length === 0 && !outputDescription.trim()}
-                className={`flex items-center justify-center gap-3 px-10 py-4 text-lg font-bold rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-105 active:scale-100 transition-all duration-300 ${
+                className={`glow-btn-inner flex items-center justify-center gap-3 px-10 py-4 text-lg font-bold disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-100 transition-all duration-300 ${
                     isLoading
-                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_30px_rgba(220,38,38,0.7)]'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
                     : 'bg-white text-black hover:bg-gray-100 disabled:bg-gray-800 disabled:text-gray-500'
                 }`}
             >
@@ -610,6 +621,7 @@ const App: React.FC = () => {
                     <><SparklesIcon className="w-6 h-6"/><span>Generate</span></>
                 )}
             </button>
+            </div>
         </div>
       </main>
 
