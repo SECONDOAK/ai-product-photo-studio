@@ -404,9 +404,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-gray-100 font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-black text-gray-100 font-sans selection:bg-white selection:text-black overflow-x-hidden">
       <Header onOpenSettings={() => setIsApiKeyModalOpen(true)} onLogout={handleLogout} isLoggedIn={hasFullAccess} />
-      <main className="container mx-auto p-4 md:p-8 pb-36">
+      <main className="max-w-7xl mx-auto p-4 md:p-8 pb-36 overflow-x-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: Inputs */}
           <div className="bg-gray-800 border border-gray-700 rounded-3xl shadow-2xl p-6 space-y-8">
@@ -468,7 +468,7 @@ const App: React.FC = () => {
                     </h3>
                     <div className="group relative">
                         <InfoIcon className="w-5 h-5 text-gray-500 cursor-help hover:text-white transition-colors" />
-                        <div className="absolute left-0 top-full mt-2 w-80 p-5 bg-white text-sm text-gray-900 rounded-xl shadow-2xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        <div className="absolute left-0 top-full mt-2 w-64 sm:w-80 p-4 sm:p-5 bg-white text-sm text-gray-900 rounded-xl shadow-2xl border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                             {isTrialMode ? (
                                 <p className="mb-3 font-bold text-gray-900">You have {trialRemaining} free generations remaining. 4K is not available in free mode.</p>
                             ) : (
