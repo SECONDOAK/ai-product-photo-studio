@@ -47,55 +47,37 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 <style>
-  @keyframes spin-border {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  @property --border-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes spin-angle {
+    to { --border-angle: 360deg; }
   }
   .glow-btn-wrapper {
     position: relative;
     border-radius: 9999px;
-    overflow: hidden;
-    padding: 2px;
-  }
-  .glow-btn-wrapper::before {
-    content: '';
-    position: absolute;
-    inset: -50%;
+    padding: 2.5px;
     background: conic-gradient(
-      from 0deg,
-      #6366f1 0%,
-      #8b5cf6 15%,
-      #a855f7 25%,
-      #ec4899 35%,
-      #f9a8d4 45%,
-      #c084fc 55%,
-      #818cf8 65%,
-      #6366f1 75%,
-      #8b5cf6 85%,
-      #6366f1 100%
+      from var(--border-angle),
+      #6366f1, #8b5cf6, #a855f7, #ec4899,
+      #f9a8d4, #c084fc, #818cf8, #6366f1
     );
-    animation: spin-border 3s linear infinite;
-    z-index: 0;
+    animation: spin-angle 3s linear infinite;
   }
-  .glow-btn-wrapper.disabled::before {
+  .glow-btn-wrapper.disabled {
     background: #27272a;
     animation: none;
   }
-  .glow-btn-wrapper.loading::before {
+  .glow-btn-wrapper.loading {
     background: conic-gradient(
-      from 0deg,
-      #dc2626 0%,
-      #ef4444 15%,
-      #f87171 30%,
-      #fca5a5 45%,
-      #f87171 60%,
-      #ef4444 75%,
-      #dc2626 100%
+      from var(--border-angle),
+      #dc2626, #ef4444, #f87171, #fca5a5,
+      #f87171, #ef4444, #dc2626
     );
   }
   .glow-btn-inner {
-    position: relative;
-    z-index: 1;
     border-radius: 9999px;
   }
 </style>
