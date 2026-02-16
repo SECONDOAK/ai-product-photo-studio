@@ -17,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
                 <CameraIcon className="h-6 w-6 text-white" />
             </div>
             <h1 className="text-xl font-bold text-white tracking-wide">
-            AI Studio
+            ShotLab
             </h1>
         </div>
         <div className="flex items-center gap-4">
