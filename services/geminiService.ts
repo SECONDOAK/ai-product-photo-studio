@@ -122,7 +122,7 @@ export const generateProductPhoto = async (
     parts.push({ text: textPrompt });
 
     const isHighRes = resolution === '2K' || resolution === '4K';
-    const model = isHighRes ? 'gemini-3-pro-image-preview' : 'gemini-nano-banana-2.1';
+    const model = 'gemini-nano-banana-2.1';
 
     const config: any = {
         imageConfig: {
@@ -219,7 +219,7 @@ export const retouchImage = async (
     parts.push({ text: finalPrompt });
 
     const isHighRes = resolution === '2K' || resolution === '4K';
-    const model = isHighRes ? 'gemini-3-pro-image-preview' : 'gemini-nano-banana-2.1';
+    const model = 'gemini-nano-banana-2.1';
 
     const config: any = {
         imageConfig: {
