@@ -17,16 +17,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
             <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="w-7 h-7 transition-transform duration-500 ease-out group-hover:rotate-180 drop-shadow-[0_2px_8px_rgba(34,211,238,0.35)]"
+                className="w-8 h-8 transition-transform duration-500 ease-out group-hover:rotate-180 drop-shadow-[0_2px_8px_rgba(34,211,238,0.4)]"
             >
                 <defs>
                     <linearGradient id="shotlabGrad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stopColor="#34d399" />
+                        <stop offset="0" stopColor="#5eead4" />
                         <stop offset="0.5" stopColor="#22d3ee" />
-                        <stop offset="1" stopColor="#3b82f6" />
+                        <stop offset="1" stopColor="#38bdf8" />
                     </linearGradient>
                 </defs>
                 <g stroke="url(#shotlabGrad)">
