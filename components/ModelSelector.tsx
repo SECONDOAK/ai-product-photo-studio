@@ -10,7 +10,6 @@ interface ModelOption {
   Icon: React.FC<React.SVGProps<SVGSVGElement>>;
   chipGradient: string;
   chipGlow: string;
-  selectedRing: string;
 }
 
 const MODELS: ModelOption[] = [
@@ -21,7 +20,6 @@ const MODELS: ModelOption[] = [
     Icon: BoltIcon,
     chipGradient: 'bg-gradient-to-br from-amber-300 via-orange-400 to-rose-400',
     chipGlow: 'shadow-[0_4px_14px_rgba(251,146,60,0.45)]',
-    selectedRing: 'ring-2 ring-orange-400/60',
   },
   {
     id: 'gemini-3-pro-image-preview',
@@ -30,7 +28,6 @@ const MODELS: ModelOption[] = [
     Icon: GemIcon,
     chipGradient: 'bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500',
     chipGlow: 'shadow-[0_4px_14px_rgba(139,92,246,0.45)]',
-    selectedRing: 'ring-2 ring-violet-400/60',
   },
 ];
 
@@ -52,7 +49,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onS
               onClick={() => onSelect(model.id)}
               className={`group flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 active:scale-[0.98] ${
                 isSelected
-                  ? `border-transparent bg-white shadow-lg ${model.selectedRing}`
+                  ? 'border-white bg-white shadow-lg'
                   : 'border-gray-800 bg-gray-900 hover:border-gray-600'
               }`}
             >
