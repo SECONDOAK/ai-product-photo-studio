@@ -26,8 +26,8 @@ const MODELS: ModelOption[] = [
     label: 'Pro',
     tagline: 'Max detail, text & logos',
     Icon: GemIcon,
-    chipGradient: 'bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500',
-    chipGlow: 'shadow-[0_4px_14px_rgba(139,92,246,0.45)]',
+    chipGradient: 'bg-gradient-to-br from-emerald-400 via-cyan-400 to-blue-500',
+    chipGlow: 'shadow-[0_4px_14px_rgba(34,211,238,0.45)]',
   },
 ];
 

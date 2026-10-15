@@ -595,7 +595,7 @@ const App: React.FC = () => {
                 ? '0 0 25px rgba(220,38,38,0.5)'
                 : (!isLoading && productImages.length === 0 && !outputDescription.trim())
                   ? 'none'
-                  : '0 0 25px rgba(139,92,246,0.4), 0 0 50px rgba(168,85,247,0.15)'
+                  : '0 0 25px rgba(34,211,238,0.4), 0 0 50px rgba(59,130,246,0.15)'
               }}
             >
              <button
