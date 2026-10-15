@@ -9,8 +9,8 @@ interface ModelOption {
 }
 
 const MODELS: ModelOption[] = [
-  { id: 'gemini-nano-banana-2.1', label: 'Nano Banana 2.1', tagline: 'Latest · fast' },
-  { id: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro', tagline: 'Gemini 3 Pro' },
+  { id: 'gemini-nano-banana-2.1', label: 'Fast', tagline: 'Latest · fastest' },
+  { id: 'gemini-3-pro-image-preview', label: 'Pro', tagline: 'Max detail, text & logos' },
 ];
 
 interface ModelSelectorProps {
