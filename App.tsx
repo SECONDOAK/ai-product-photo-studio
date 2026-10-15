@@ -33,7 +33,6 @@ const App: React.FC = () => {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceAspects, setReferenceAspects] = useState<string[]>([]);
-  const [textPrompt, setTextPrompt] = useState('');
   const [outputDescription, setOutputDescription] = useState('');
   const [aspectRatio, setAspectRatio] = useState<string>('1:1');
   const [resolution, setResolution] = useState<string>('1K');
@@ -203,17 +202,8 @@ const App: React.FC = () => {
         combinedPrompt += ` Follow these composition instructions: ${outputDescription}.`;
       }
 
-      let stylePrompt = '';
       if (selectedStyle) {
-        stylePrompt += selectedStyle.prompt;
-      }
-      if (textPrompt) {
-        if (stylePrompt) stylePrompt += ' ';
-        stylePrompt += textPrompt;
-      }
-
-      if (stylePrompt.trim()) {
-        combinedPrompt += ` Additional style guidance: ${stylePrompt.trim()}.`;
+        combinedPrompt += ` Additional style guidance: ${selectedStyle.prompt}.`;
       }
 
       // If user has own API key, pass it directly. Otherwise proxy handles it.
@@ -252,7 +242,7 @@ const App: React.FC = () => {
           abortControllerRef.current = null;
       }
     }
-  }, [productImages, referenceImage, textPrompt, selectedStyle, outputDescription, referenceAspects, aspectRatio, resolution, apiKey, isTrialMode, trialExhausted, trialRemaining, imageModel]);
+  }, [productImages, referenceImage, selectedStyle, outputDescription, referenceAspects, aspectRatio, resolution, apiKey, isTrialMode, trialExhausted, trialRemaining, imageModel]);
 
   const handleRetouch = useCallback(async () => {
     if (!generatedImage || !retouchPrompt.trim()) {
@@ -446,8 +436,8 @@ const App: React.FC = () => {
 
             <div className="border-t border-gray-700 pt-8">
               <h2 className="text-xl font-semibold text-white mb-4 tracking-tight">2. Describe Output</h2>
-              <p className="text-gray-400 text-sm mb-4">Composition instructions (e.g., 'A single shoe, side view'). Required if no image is uploaded.</p>
-              <textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} placeholder="Describe the composition..." className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
+              <p className="text-gray-400 text-sm mb-4">Composition and style instructions (e.g., 'A single shoe, side view, on a marble surface'). Required if no image is uploaded.</p>
+              <textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} placeholder="Describe the composition and style..." className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
               <AspectRatioSelector selectedAspectRatio={aspectRatio} onSelect={setAspectRatio} />
               <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} locked4K={isTrialMode} />
               <ModelSelector selectedModel={imageModel} onSelect={handleSelectModel} />
@@ -461,10 +451,6 @@ const App: React.FC = () => {
                 <div>
                   <ImageUploader label="Style Reference Image (Optional)" onImageUpload={setReferenceImage} previewId="reference-preview" />
                   {referenceImage && <ReferenceAspectSelector selectedAspects={referenceAspects} onSelectionChange={setReferenceAspects} />}
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-300 mb-2">Or Describe It</h3>
-                  <textarea value={textPrompt} onChange={(e) => setTextPrompt(e.target.value)} placeholder="e.g., 'on a marble surface...'" className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
                 </div>
               </div>
             </div>
