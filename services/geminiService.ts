@@ -99,6 +99,9 @@ const fileToGenerativePart = (base64: string): GeminiPart => {
   };
 };
 
+export type ImageModelId = 'gemini-nano-banana-2.1' | 'gemini-3-pro-image-preview';
+export const DEFAULT_IMAGE_MODEL: ImageModelId = 'gemini-nano-banana-2.1';
+
 export const generateProductPhoto = async (
   productImagesBase64: string[],
   referenceImageBase64: string | null,
@@ -106,7 +109,8 @@ export const generateProductPhoto = async (
   aspectRatio: string,
   resolution: string,
   signal?: AbortSignal,
-  apiKey?: string
+  apiKey?: string,
+  modelId: ImageModelId = DEFAULT_IMAGE_MODEL
 ): Promise<string> => {
 
     const parts: GeminiPart[] = [];
@@ -122,7 +126,7 @@ export const generateProductPhoto = async (
     parts.push({ text: textPrompt });
 
     const isHighRes = resolution === '2K' || resolution === '4K';
-    const model = 'gemini-nano-banana-2.1';
+    const model = modelId;
 
     const config: any = {
         imageConfig: {
@@ -197,7 +201,8 @@ export const retouchImage = async (
     maskImageBase64?: string,
     referenceImageBase64?: string,
     signal?: AbortSignal,
-    apiKey?: string
+    apiKey?: string,
+    modelId: ImageModelId = DEFAULT_IMAGE_MODEL
   ): Promise<string> => {
 
     let finalPrompt = `Apply this edit to the FIRST image provided: ${retouchPrompt}. Do not change the product itself, only apply the requested stylistic adjustment. Maintain the original aspect ratio.`;
@@ -219,7 +224,7 @@ export const retouchImage = async (
     parts.push({ text: finalPrompt });
 
     const isHighRes = resolution === '2K' || resolution === '4K';
-    const model = 'gemini-nano-banana-2.1';
+    const model = modelId;
 
     const config: any = {
         imageConfig: {

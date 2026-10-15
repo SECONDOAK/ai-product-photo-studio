@@ -5,7 +5,8 @@ import { ImageUploader } from './components/ImageUploader';
 import { StyleSelector } from './components/StyleSelector';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { PhotoIcon, SparklesIcon, XCircleIcon, DownloadIcon, UndoIcon, PencilIcon, CoinIcon, InfoIcon, PaperClipIcon } from './components/IconComponents';
-import { generateProductPhoto, retouchImage } from './services/geminiService';
+import { generateProductPhoto, retouchImage, ImageModelId, DEFAULT_IMAGE_MODEL } from './services/geminiService';
+import { ModelSelector } from './components/ModelSelector';
 import { StylePreset } from './types';
 import { STYLE_PRESETS } from './constants';
 import { ImageModal } from './components/ImageModal';
@@ -36,6 +37,10 @@ const App: React.FC = () => {
   const [outputDescription, setOutputDescription] = useState('');
   const [aspectRatio, setAspectRatio] = useState<string>('1:1');
   const [resolution, setResolution] = useState<string>('1K');
+  const [imageModel, setImageModel] = useState<ImageModelId>(() => {
+    const saved = localStorage.getItem('gemini-image-model');
+    return saved === 'gemini-3-pro-image-preview' ? saved : DEFAULT_IMAGE_MODEL;
+  });
   const [selectedStyle, setSelectedStyle] = useState<StylePreset | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [generationHistory, setGenerationHistory] = useState<string[]>([]);
@@ -107,6 +112,11 @@ const App: React.FC = () => {
     localStorage.removeItem('gemini-api-key');
     localStorage.removeItem('gemini-app-unlocked');
   };
+
+  const handleSelectModel = useCallback((model: ImageModelId) => {
+    setImageModel(model);
+    localStorage.setItem('gemini-image-model', model);
+  }, []);
 
   const decrementTrial = () => {
     if (isTrialMode) {
@@ -214,7 +224,8 @@ const App: React.FC = () => {
           aspectRatio,
           resolution,
           abortController.signal,
-          apiKey || undefined
+          apiKey || undefined,
+          imageModel
       );
 
       if (!abortController.signal.aborted) {
@@ -241,7 +252,7 @@ const App: React.FC = () => {
           abortControllerRef.current = null;
       }
     }
-  }, [productImages, referenceImage, textPrompt, selectedStyle, outputDescription, referenceAspects, aspectRatio, resolution, apiKey, isTrialMode, trialExhausted, trialRemaining]);
+  }, [productImages, referenceImage, textPrompt, selectedStyle, outputDescription, referenceAspects, aspectRatio, resolution, apiKey, isTrialMode, trialExhausted, trialRemaining, imageModel]);
 
   const handleRetouch = useCallback(async () => {
     if (!generatedImage || !retouchPrompt.trim()) {
@@ -282,7 +293,8 @@ const App: React.FC = () => {
             maskBase64,
             retouchRefImage || undefined,
             abortController.signal,
-            apiKey || undefined
+            apiKey || undefined,
+            imageModel
         );
 
         if (!abortController.signal.aborted) {
@@ -312,7 +324,7 @@ const App: React.FC = () => {
         abortControllerRef.current = null;
       }
     }
-  }, [generatedImage, retouchPrompt, aspectRatio, resolution, isMaskingMode, retouchRefImage, apiKey, isTrialMode, trialExhausted, trialRemaining]);
+  }, [generatedImage, retouchPrompt, aspectRatio, resolution, isMaskingMode, retouchRefImage, apiKey, isTrialMode, trialExhausted, trialRemaining, imageModel]);
 
   const handleUndoRetouch = useCallback(() => {
     if (retouchBeforeImage) {
@@ -438,6 +450,7 @@ const App: React.FC = () => {
               <textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} placeholder="Describe the composition..." className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
               <AspectRatioSelector selectedAspectRatio={aspectRatio} onSelect={setAspectRatio} />
               <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} locked4K={isTrialMode} />
+              <ModelSelector selectedModel={imageModel} onSelect={handleSelectModel} />
             </div>
 
             <div className="border-t border-gray-700 pt-8">
@@ -458,7 +471,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Right Column: Output */}
-          <div className="bg-gray-800 border border-gray-700 rounded-3xl shadow-2xl p-6 flex flex-col h-[calc(100vh-8rem)] lg:h-[calc(100vh-12rem)] sticky top-24">
+          <div className="bg-gray-800 border border-gray-700 rounded-3xl shadow-2xl p-6 flex flex-col h-[calc(100vh-6rem)] sticky top-20">
 
               {/* Status: Trial or Cost Counter */}
               <div className="flex justify-between items-center mb-4">
