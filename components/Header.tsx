@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CogIcon } from './IconComponents';
+import { ApertureIcon, CogIcon } from './IconComponents';
 
 interface HeaderProps {
     onOpenSettings: () => void;
@@ -14,31 +14,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="group flex items-center gap-3" aria-label="ShotLab">
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-8 h-8 transition-transform duration-500 ease-out group-hover:rotate-180 drop-shadow-[0_2px_8px_rgba(34,211,238,0.4)]"
-            >
-                <defs>
-                    <linearGradient id="shotlabGrad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stopColor="#5eead4" />
-                        <stop offset="0.5" stopColor="#22d3ee" />
-                        <stop offset="1" stopColor="#38bdf8" />
-                    </linearGradient>
-                </defs>
-                <g stroke="url(#shotlabGrad)">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
-                    <line x1="9.69" y1="8" x2="21.17" y2="8" />
-                    <line x1="7.38" y1="12" x2="13.12" y2="2.06" />
-                    <line x1="9.69" y1="16" x2="3.95" y2="6.06" />
-                    <line x1="14.31" y1="16" x2="2.83" y2="16" />
-                    <line x1="16.62" y1="12" x2="10.88" y2="21.94" />
-                </g>
-            </svg>
+            <span className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 via-cyan-400 to-blue-500 shadow-[0_3px_12px_rgba(34,211,238,0.35)]">
+                <ApertureIcon
+                    className="text-white transition-transform duration-500 ease-out group-hover:rotate-180"
+                    style={{ width: 24, height: 24 }}
+                    strokeWidth={2}
+                />
+            </span>
             <span className="flex flex-col leading-none">
                 <span className="text-xl font-extrabold tracking-tight text-white">ShotLab</span>
                 <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-500 mt-1 hidden sm:block">AI Product Photo Studio</span>
@@ -74,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
         </div>
       </div>
       {/* gradient hairline */}
-      <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-gray-600/60 to-transparent" />
     </header>
   );
 };
