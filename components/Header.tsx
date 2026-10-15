@@ -19,10 +19,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
                 <ApertureIcon className="relative w-5.5 h-5.5 text-white drop-shadow-sm transition-transform duration-500 ease-out group-hover:rotate-180" style={{ width: 22, height: 22 }} />
             </span>
             <span className="flex flex-col leading-none">
-                <span className="text-xl font-extrabold tracking-tight">
-                    <span className="text-white">Shot</span>
-                    <span className="bg-gradient-to-r from-sky-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Lab</span>
-                </span>
+                <span className="text-xl font-extrabold tracking-tight text-white">ShotLab</span>
                 <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-500 mt-1 hidden sm:block">AI Product Photo Studio</span>
             </span>
         </a>
