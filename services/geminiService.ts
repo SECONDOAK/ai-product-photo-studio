@@ -102,6 +102,14 @@ const fileToGenerativePart = (base64: string): GeminiPart => {
 export type ImageModelId = 'gemini-nano-banana-2.1' | 'gemini-3-pro-image-preview';
 export const DEFAULT_IMAGE_MODEL: ImageModelId = 'gemini-nano-banana-2.1';
 
+// Google list prices (USD per generated image, standard tier)
+// https://ai.google.dev/gemini-api/docs/pricing
+export const MODEL_PRICES_USD: Record<ImageModelId, Record<string, number>> = {
+  'gemini-nano-banana-2.1': { '1K': 0.0336, '2K': 0.0504, '4K': 0.113 },
+  'gemini-3-pro-image-preview': { '1K': 0.134, '2K': 0.134, '4K': 0.24 },
+};
+export const USD_TO_SEK = 11;
+
 export const generateProductPhoto = async (
   productImagesBase64: string[],
   referenceImageBase64: string | null,

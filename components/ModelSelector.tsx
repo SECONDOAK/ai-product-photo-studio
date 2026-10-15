@@ -8,11 +8,27 @@ interface ModelOption {
   label: string;
   tagline: string;
   Icon: React.FC<React.SVGProps<SVGSVGElement>>;
+  badge: string;
+  badgeSelected: string;
 }
 
 const MODELS: ModelOption[] = [
-  { id: 'gemini-nano-banana-2.1', label: 'Fast', tagline: 'Latest · fastest', Icon: BoltIcon },
-  { id: 'gemini-3-pro-image-preview', label: 'Pro', tagline: 'Max detail, text & logos', Icon: GemIcon },
+  {
+    id: 'gemini-nano-banana-2.1',
+    label: 'Fast',
+    tagline: 'Latest · fastest',
+    Icon: BoltIcon,
+    badge: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
+    badgeSelected: 'bg-amber-100 border-amber-300 text-amber-600',
+  },
+  {
+    id: 'gemini-3-pro-image-preview',
+    label: 'Pro',
+    tagline: 'Max detail, text & logos',
+    Icon: GemIcon,
+    badge: 'bg-violet-500/15 border-violet-500/40 text-violet-400',
+    badgeSelected: 'bg-violet-100 border-violet-300 text-violet-600',
+  },
 ];
 
 interface ModelSelectorProps {
@@ -37,7 +53,9 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onS
                   : 'border-gray-800 bg-gray-900 hover:border-gray-600'
               }`}
             >
-              <model.Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-black' : 'text-gray-400'}`} strokeWidth={1.8} />
+              <span className={`flex items-center justify-center w-8 h-8 flex-shrink-0 rounded-lg border ${isSelected ? model.badgeSelected : model.badge}`}>
+                <model.Icon className="w-4 h-4" strokeWidth={1.8} />
+              </span>
               <span className="flex flex-col items-start">
                 <span className={`text-sm font-bold ${isSelected ? 'text-black' : 'text-gray-300'}`}>
                   {model.label}

@@ -5,7 +5,7 @@ import { ImageUploader } from './components/ImageUploader';
 import { StyleSelector } from './components/StyleSelector';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { PhotoIcon, SparklesIcon, XCircleIcon, DownloadIcon, UndoIcon, PencilIcon, CoinIcon, InfoIcon, PaperClipIcon } from './components/IconComponents';
-import { generateProductPhoto, retouchImage, ImageModelId, DEFAULT_IMAGE_MODEL } from './services/geminiService';
+import { generateProductPhoto, retouchImage, ImageModelId, DEFAULT_IMAGE_MODEL, MODEL_PRICES_USD, USD_TO_SEK } from './services/geminiService';
 import { ModelSelector } from './components/ModelSelector';
 import { StylePreset } from './types';
 import { STYLE_PRESETS } from './constants';
@@ -20,14 +20,6 @@ import { DrawingCanvas, DrawingCanvasHandle } from './components/DrawingCanvas';
 import heic2any from 'heic2any';
 
 const FREE_GENERATIONS = 5;
-
-// Cost constants matching ResolutionSelector
-const EXCHANGE_RATE = 11;
-const PRICES_USD: Record<string, number> = {
-    '1K': 0.134,
-    '2K': 0.134,
-    '4K': 0.24
-};
 
 const App: React.FC = () => {
   const [productImages, setProductImages] = useState<string[]>([]);
@@ -126,8 +118,8 @@ const App: React.FC = () => {
   };
 
   const calculateAndAddCost = (res: string) => {
-      const usdCost = PRICES_USD[res] || 0;
-      const sekCost = usdCost * EXCHANGE_RATE;
+      const usdCost = MODEL_PRICES_USD[imageModel]?.[res] || 0;
+      const sekCost = usdCost * USD_TO_SEK;
       setSessionCost(prev => prev + sekCost);
   };
 
@@ -438,9 +430,9 @@ const App: React.FC = () => {
               <h2 className="text-xl font-semibold text-white mb-4 tracking-tight">2. Describe Output</h2>
               <p className="text-gray-400 text-sm mb-4">Composition and style instructions (e.g., 'A single shoe, side view, on a marble surface'). Required if no image is uploaded.</p>
               <textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} placeholder="Describe the composition and style..." className="w-full h-24 p-3 bg-gray-900 border border-gray-700 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent transition text-sm text-white placeholder-gray-600 resize-none" rows={3} />
-              <AspectRatioSelector selectedAspectRatio={aspectRatio} onSelect={setAspectRatio} />
-              <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} locked4K={isTrialMode} />
               <ModelSelector selectedModel={imageModel} onSelect={handleSelectModel} />
+              <AspectRatioSelector selectedAspectRatio={aspectRatio} onSelect={setAspectRatio} />
+              <ResolutionSelector selectedResolution={resolution} onSelect={setResolution} selectedModel={imageModel} locked4K={isTrialMode} />
             </div>
 
             <div className="border-t border-gray-700 pt-8">
@@ -474,10 +466,11 @@ const App: React.FC = () => {
                                 <>
                                     <p className="mb-3 font-bold text-gray-900">The cost is based on tokens to use the Gemini API.</p>
                                     <ul className="space-y-2 text-gray-700 mb-3 font-medium">
-                                        <li>• 1K / 2K images ≈ 1.47 SEK</li>
-                                        <li>• 4K images ≈ 2.64 SEK</li>
+                                        {['1K', '2K', '4K'].map(res => (
+                                            <li key={res}>• {res} images ≈ {(MODEL_PRICES_USD[imageModel][res] * USD_TO_SEK).toFixed(2)} SEK</li>
+                                        ))}
                                     </ul>
-                                    <p className="text-gray-500 text-xs uppercase tracking-wide">per image generation</p>
+                                    <p className="text-gray-500 text-xs uppercase tracking-wide">per image generation ({imageModel === 'gemini-nano-banana-2.1' ? 'Fast' : 'Pro'} model)</p>
                                 </>
                             )}
                         </div>

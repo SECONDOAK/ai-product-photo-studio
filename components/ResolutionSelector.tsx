@@ -1,30 +1,25 @@
 
 import React from 'react';
 import { CoinIcon } from './IconComponents';
+import { ImageModelId, MODEL_PRICES_USD, USD_TO_SEK, DEFAULT_IMAGE_MODEL } from '../services/geminiService';
 
 const RESOLUTIONS = ['1K', '2K', '4K'];
-
-// Exchange rate approx 1 USD = 11 SEK
-const EXCHANGE_RATE = 11;
-const PRICES_USD: Record<string, number> = {
-    '1K': 0.134,
-    '2K': 0.134,
-    '4K': 0.24
-};
 
 interface ResolutionSelectorProps {
   selectedResolution: string;
   onSelect: (resolution: string) => void;
+  selectedModel: ImageModelId;
   locked4K?: boolean;
 }
 
-export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({ selectedResolution, onSelect, locked4K = false }) => {
+export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({ selectedResolution, onSelect, selectedModel, locked4K = false }) => {
+  const prices = MODEL_PRICES_USD[selectedModel] || MODEL_PRICES_USD[DEFAULT_IMAGE_MODEL];
   return (
     <div className="mt-6">
       <h3 className="text-sm font-semibold text-gray-300 mb-3">Resolution & Cost per image generation</h3>
       <div className="flex flex-wrap gap-3">
         {RESOLUTIONS.map((res) => {
-            const priceSek = (PRICES_USD[res] * EXCHANGE_RATE).toFixed(2);
+            const priceSek = (prices[res] * USD_TO_SEK).toFixed(2);
             const isSelected = selectedResolution === res;
             const isLocked = res === '4K' && locked4K;
             return (
@@ -41,7 +36,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({ selected
                 }`}
               >
                 <span className={`text-sm font-bold mb-1 ${isLocked ? 'text-gray-500' : isSelected ? 'text-black' : 'text-gray-300'}`}>
-                  {res}{isLocked ? ' \uD83D\uDD12' : ''}
+                  {res}{isLocked ? ' 🔒' : ''}
                 </span>
                 <div className={`flex items-center space-x-1 px-2 py-0.5 rounded-full ${isSelected && !isLocked ? 'bg-gray-200' : 'bg-black/40'}`}>
                     <CoinIcon className={`w-3 h-3 ${isSelected && !isLocked ? 'text-yellow-600' : 'text-yellow-500'}`} />
