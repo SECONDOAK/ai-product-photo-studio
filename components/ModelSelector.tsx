@@ -8,8 +8,9 @@ interface ModelOption {
   label: string;
   tagline: string;
   Icon: React.FC<React.SVGProps<SVGSVGElement>>;
-  badge: string;
-  badgeSelected: string;
+  chipGradient: string;
+  chipGlow: string;
+  selectedRing: string;
 }
 
 const MODELS: ModelOption[] = [
@@ -18,16 +19,18 @@ const MODELS: ModelOption[] = [
     label: 'Fast',
     tagline: 'Latest · fastest',
     Icon: BoltIcon,
-    badge: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
-    badgeSelected: 'bg-amber-100 border-amber-300 text-amber-600',
+    chipGradient: 'bg-gradient-to-br from-amber-300 via-orange-400 to-rose-400',
+    chipGlow: 'shadow-[0_4px_14px_rgba(251,146,60,0.45)]',
+    selectedRing: 'ring-2 ring-orange-400/60',
   },
   {
     id: 'gemini-3-pro-image-preview',
     label: 'Pro',
     tagline: 'Max detail, text & logos',
     Icon: GemIcon,
-    badge: 'bg-violet-500/15 border-violet-500/40 text-violet-400',
-    badgeSelected: 'bg-violet-100 border-violet-300 text-violet-600',
+    chipGradient: 'bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500',
+    chipGlow: 'shadow-[0_4px_14px_rgba(139,92,246,0.45)]',
+    selectedRing: 'ring-2 ring-violet-400/60',
   },
 ];
 
@@ -39,30 +42,45 @@ interface ModelSelectorProps {
 export const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModel, onSelect }) => {
   return (
     <div className="mt-6">
-      <h3 className="text-sm font-semibold text-gray-300 mb-3">Model</h3>
-      <div className="flex flex-wrap gap-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2.5">Model</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {MODELS.map((model) => {
           const isSelected = selectedModel === model.id;
           return (
             <button
               key={model.id}
               onClick={() => onSelect(model.id)}
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border transition-all duration-200 min-w-[140px] active:scale-95 ${
+              className={`group flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 active:scale-[0.98] ${
                 isSelected
-                  ? 'border-white bg-white shadow-lg'
+                  ? `border-transparent bg-white shadow-lg ${model.selectedRing}`
                   : 'border-gray-800 bg-gray-900 hover:border-gray-600'
               }`}
             >
-              <span className={`flex items-center justify-center w-8 h-8 flex-shrink-0 rounded-lg border ${isSelected ? model.badgeSelected : model.badge}`}>
-                <model.Icon className="w-4 h-4" strokeWidth={1.8} />
+              <span
+                className={`relative flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl text-white ${model.chipGradient} ${model.chipGlow} transition-transform duration-200 group-hover:scale-105`}
+              >
+                {/* glass highlight on the chip */}
+                <span className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/40 to-transparent opacity-60" style={{ height: '50%' }} />
+                <model.Icon className="relative w-5 h-5 drop-shadow-sm" strokeWidth={2} />
               </span>
-              <span className="flex flex-col items-start">
-                <span className={`text-sm font-bold ${isSelected ? 'text-black' : 'text-gray-300'}`}>
+              <span className="flex flex-col items-start min-w-0">
+                <span className={`text-sm font-bold ${isSelected ? 'text-black' : 'text-gray-200'}`}>
                   {model.label}
                 </span>
-                <span className={`text-xs ${isSelected ? 'text-gray-600' : 'text-gray-500'}`}>
+                <span className={`text-xs truncate ${isSelected ? 'text-gray-500' : 'text-gray-500'}`}>
                   {model.tagline}
                 </span>
+              </span>
+              <span
+                className={`ml-auto flex-shrink-0 w-4 h-4 rounded-full border-2 transition-all ${
+                  isSelected ? 'border-black bg-black' : 'border-gray-700 bg-transparent'
+                }`}
+              >
+                {isSelected && (
+                  <svg viewBox="0 0 16 16" className="w-3 h-3 m-auto mt-[1px] text-white" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 8.5l3 3 6-7" />
+                  </svg>
+                )}
               </span>
             </button>
           );

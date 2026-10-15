@@ -16,8 +16,8 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({ selected
   const prices = MODEL_PRICES_USD[selectedModel] || MODEL_PRICES_USD[DEFAULT_IMAGE_MODEL];
   return (
     <div className="mt-6">
-      <h3 className="text-sm font-semibold text-gray-300 mb-3">Resolution & Cost per image generation</h3>
-      <div className="flex flex-wrap gap-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2.5">Resolution <span className="normal-case tracking-normal text-gray-600">· cost per image</span></h3>
+      <div className="grid grid-cols-3 gap-2">
         {RESOLUTIONS.map((res) => {
             const priceSek = (prices[res] * USD_TO_SEK).toFixed(2);
             const isSelected = selectedResolution === res;
@@ -27,7 +27,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({ selected
               <button
                 onClick={() => !isLocked && onSelect(res)}
                 disabled={isLocked}
-                className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl border transition-all duration-200 min-w-[90px] active:scale-95 ${
+                className={`w-full flex flex-col items-center justify-center px-3 py-2.5 rounded-xl border transition-all duration-200 active:scale-95 ${
                   isLocked
                     ? 'border-gray-800 bg-gray-900/50 opacity-40 cursor-not-allowed'
                     : isSelected
