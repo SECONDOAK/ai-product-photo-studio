@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CameraIcon, CogIcon } from './IconComponents';
+import { ApertureIcon, CogIcon } from './IconComponents';
 
 interface HeaderProps {
     onOpenSettings: () => void;
@@ -10,17 +10,25 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLoggedIn }) => {
   return (
-    <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-black/70 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+        {/* Logo */}
+        <a href="#" className="group flex items-center gap-3" aria-label="ShotLab">
+            <span className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-[0_4px_16px_rgba(139,92,246,0.45)]">
+                <span className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/40 to-transparent opacity-60" style={{ height: '50%' }} />
+                <ApertureIcon className="relative w-5.5 h-5.5 text-white drop-shadow-sm transition-transform duration-500 ease-out group-hover:rotate-180" style={{ width: 22, height: 22 }} />
+            </span>
+            <span className="flex flex-col leading-none">
+                <span className="text-xl font-extrabold tracking-tight">
+                    <span className="text-white">Shot</span>
+                    <span className="bg-gradient-to-r from-sky-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Lab</span>
+                </span>
+                <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-500 mt-1 hidden sm:block">AI Product Photo Studio</span>
+            </span>
+        </a>
+
+        {/* Actions */}
         <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-2 rounded-xl">
-                <CameraIcon className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-white tracking-wide">
-            ShotLab
-            </h1>
-        </div>
-        <div className="flex items-center gap-4">
             {isLoggedIn && onLogout && (
                 <button
                     onClick={onLogout}
@@ -31,15 +39,24 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, isLogg
             )}
             <button
                 onClick={onOpenSettings}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-gray-800 bg-gray-900/70 text-gray-400 hover:text-white hover:border-gray-600 transition-all active:scale-95"
                 aria-label="Settings"
                 title="API Key Settings"
             >
-                <CogIcon className="w-5 h-5" />
+                <CogIcon className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
             </button>
-            <div className="text-gray-500 text-xs font-mono uppercase tracking-widest hidden sm:block">Built by <a href="https://secondoak.se" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Second Oak</a></div>
+            <a
+                href="https://secondoak.se"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-800 bg-gray-900/70 text-gray-500 hover:text-white hover:border-gray-600 transition-all text-[10px] font-mono uppercase tracking-widest"
+            >
+                Built by Second Oak
+            </a>
         </div>
       </div>
+      {/* gradient hairline */}
+      <div className="h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
     </header>
   );
 };
